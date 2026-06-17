@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Radar</title>
+    <meta name="description" content="Track and share the latest Google Cloud BigQuery releases and feature updates in real time.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- CSS stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="dark-theme">
+    <!-- Background Glow Blobs -->
+    <div class="glow-container">
+        <div class="glow-blob glow-blue"></div>
+        <div class="glow-blob glow-purple"></div>
+        <div class="glow-blob glow-cyan"></div>
+    </div>
+
+    <!-- Main App Layout -->
+    <div class="app-container">
+        
+        <!-- Header Section -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i data-lucide="radar" class="pulse-icon"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>BQ Release Radar</h1>
+                    <p>Real-time BigQuery Updates & Sharing Hub</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <div class="status-indicator">
+                    <span class="status-dot green"></span>
+                    <span id="last-updated-text">Syncing...</span>
+                </div>
+                
+                <button id="refresh-btn" class="btn btn-primary" title="Refresh Release Notes">
+                    <i data-lucide="rotate-cw" class="icon-refresh"></i>
+                    <span>Refresh</span>
+                </button>
+                
+                <button id="theme-toggle" class="btn btn-icon" title="Toggle Theme">
+                    <i data-lucide="sun" class="sun-icon"></i>
+                    <i data-lucide="moon" class="moon-icon"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Bar -->
+        <section class="stats-bar card">
+            <div class="stat-item">
+                <div class="stat-icon icon-features">
+                    <i data-lucide="rocket"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-features">0</h3>
+                    <p>Features</p>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon icon-announcements">
+                    <i data-lucide="megaphone"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-announcements">0</h3>
+                    <p>Announcements</p>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon icon-issues">
+                    <i data-lucide="alert-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-issues">0</h3>
+                    <p>Issues / Fixes</p>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon icon-bookmarks">
+                    <i data-lucide="star"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-bookmarks">0</h3>
+                    <p>Bookmarks</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            
+            <!-- Feed Control Bar (Filters & Search) -->
+            <div class="control-bar card">
+                <div class="search-box">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="search-input" placeholder="Search updates (e.g. Gemini, partition, syntax)...">
+                </div>
+                
+                <div class="filter-options">
+                    <div class="filter-group">
+                        <label for="category-filter">Category:</label>
+                        <select id="category-filter" class="form-select">
+                            <option value="all">All Categories</option>
+                            <option value="Feature">Features</option>
+                            <option value="Announcement">Announcements</option>
+                            <option value="Issue">Issues & Fixes</option>
+                            <option value="Changed">Changes</option>
+                            <option value="Deprecated">Deprecations</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="sort-order">Sort:</label>
+                        <select id="sort-order" class="form-select">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                        </select>
+                    </div>
+
+                    <div class="toggle-bookmarks-btn-wrapper">
+                        <button id="toggle-bookmarks-filter" class="btn btn-secondary">
+                            <i data-lucide="star"></i>
+                            <span>Bookmarks Only</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="content-grid">
+                
+                <!-- Main Release Notes Feed -->
+                <section class="feed-section">
+                    <div id="loader" class="loader-container">
+                        <div class="spinner"></div>
+                        <p>Fetching BigQuery release notes...</p>
+                    </div>
+                    
+                    <div id="error-message" class="error-container hidden">
+                        <i data-lucide="alert-circle" class="error-icon"></i>
+                        <h3>Failed to load release notes</h3>
+                        <p id="error-text">Unknown error occurred</p>
+                        <button id="retry-btn" class="btn btn-primary">Retry</button>
+                    </div>
+
+                    <div id="no-results" class="no-results-container hidden">
+                        <i data-lucide="inbox" class="no-results-icon"></i>
+                        <h3>No matching updates found</h3>
+                        <p>Try clearing your search filters or bookmarks.</p>
+                        <button id="clear-filters-btn" class="btn btn-secondary">Reset Filters</button>
+                    </div>
+
+                    <div id="feed-container" class="feed-container">
+                        <!-- Populated dynamically via JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Floating Sidebar / Bookmarks drawer (Visible on large screens, or toggled) -->
+                <aside class="sidebar-section">
+                    <div class="sidebar-card card">
+                        <div class="sidebar-header">
+                            <div class="sidebar-title">
+                                <i data-lucide="star" class="star-icon-filled"></i>
+                                <h2>Bookmarks</h2>
+                            </div>
+                            <span id="bookmarks-count-badge" class="badge">0</span>
+                        </div>
+                        <div id="sidebar-bookmarks-list" class="sidebar-list">
+                            <!-- Populated dynamically -->
+                            <p class="empty-state">No bookmarked updates. Star an update card to access it quickly here!</p>
+                        </div>
+                    </div>
+
+                    <!-- GCP Resources Helper -->
+                    <div class="sidebar-card card resources-card">
+                        <h2>Quick Resources</h2>
+                        <ul class="resources-list">
+                            <li>
+                                <a href="https://cloud.google.com/bigquery/docs/release-notes" target="_blank" rel="noopener">
+                                    <i data-lucide="external-link"></i> Official BQ Release Notes
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://cloud.google.com/bigquery/docs" target="_blank" rel="noopener">
+                                    <i data-lucide="book-open"></i> BigQuery Documentation
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://cloud.google.com/bigquery/pricing" target="_blank" rel="noopener">
+                                    <i data-lucide="credit-card"></i> BigQuery Pricing Guide
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </aside>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Twitter / X Share Modal -->
+    <div id="tweet-modal" class="modal-overlay hidden">
+        <div class="modal-card card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i data-lucide="twitter" class="x-brand-icon"></i>
+                    <h2>Compose Post</h2>
+                </div>
+                <button id="close-modal-btn" class="btn btn-icon" title="Close">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="tweet-composer-preview">
+                    <!-- Tweet Preview Box mimicking X interface -->
+                    <div class="tweet-avatar">
+                        <i data-lucide="user"></i>
+                    </div>
+                    <div class="tweet-content-wrapper">
+                        <div class="tweet-author-info">
+                            <span class="tweet-display-name">GCP User</span>
+                            <span class="tweet-handle">@gcp_tracker</span>
+                        </div>
+                        
+                        <textarea id="tweet-textarea" class="tweet-textarea" rows="5" placeholder="What's happening?"></textarea>
+                        
+                        <!-- Attach metadata info showing source -->
+                        <div id="tweet-link-badge" class="tweet-link-badge">
+                            <i data-lucide="link" class="badge-link-icon"></i>
+                            <span id="tweet-link-text">https://docs.cloud.google.com/bigquery/...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Template Selector -->
+                <div class="template-selector">
+                    <label>Choose a sharing template:</label>
+                    <div class="templates-grid">
+                        <button class="template-btn active" data-template-id="default">
+                            🚀 Standard Update
+                        </button>
+                        <button class="template-btn" data-template-id="summary">
+                            📝 Summary & Link
+                        </button>
+                        <button class="template-btn" data-template-id="excited">
+                            🔥 Tech Enthusiast
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <div class="char-counter-container">
+                    <svg class="progress-ring" width="36" height="36">
+                        <circle class="progress-ring-bg" stroke="#e2e8f0" stroke-width="3" fill="transparent" r="14" cx="18" cy="18"/>
+                        <circle class="progress-ring-bar" id="char-progress-circle" stroke="#3b82f6" stroke-width="3" fill="transparent" r="14" cx="18" cy="18"/>
+                    </svg>
+                    <span id="char-count">280</span>
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="cancel-modal-btn" class="btn btn-secondary">Cancel</button>
+                    <button id="share-tweet-btn" class="btn btn-primary">
+                        <i data-lucide="twitter"></i>
+                        <span>Post to X</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <i data-lucide="check-circle" class="toast-icon"></i>
+        <span id="toast-message">Message goes here</span>
+    </div>
+
+    <!-- Main JavaScript file -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
